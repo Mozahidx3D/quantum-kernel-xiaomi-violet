@@ -450,14 +450,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common -fshort-wchar \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
-		   -std=gnu89 \
-                   -O2 \
-                   -mcpu=cortex-a76+crc+crypto -march=armv8.2-a+lse+fp16+dotprod
-#                   -mllvm -polly \
-#                   -mllvm -polly-vectorizer=stripmine \
-#                   -fomit-frame-pointer \
-#                   -fno-semantic-interposition \
-#                   -mglobal-merge
+		   -std=gnu89
 
 
 ifeq ($(TARGET_BOARD_TYPE),auto)
@@ -741,11 +734,15 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning, int-in-bool-context)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, address-of-packed-member)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, attribute-alias)
 
-ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
+
+ifdef CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE
+KBUILD_CFLAGS   += -O2 -mcpu=cortex-a76+crc+crypto -march=armv8.2-a+lse+fp16+dotprod
+else ifdef CONFIG_CC_OPTIMIZE_FOR_MORE_PERFORMANCE_O3
+KBUILD_CFLAGS   += -O3 -mcpu=cortex-a76+crc+crypto -march=armv8.2-a+lse+fp16+dotprod
+else ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS   += -Os
-else
-KBUILD_CFLAGS   += -mcpu=cortex-a76+crc+crypto -march=armv8.2-a+lse+fp16+dotprod
 endif
+
 
 # Tell gcc to never replace conditional load with a non-conditional one
 KBUILD_CFLAGS	+= $(call cc-option,--param=allow-store-data-races=0)
@@ -922,7 +919,7 @@ endif
 lto-clang-flags += -fvisibility=default $(call cc-option, -fsplit-lto-unit)
 
 # Limit inlining across translation units to reduce binary size
-LD_FLAGS_LTO_CLANG := -mllvm -import-instr-limit=5
+LD_FLAGS_LTO_CLANG := --lto-O3
 
 KBUILD_LDFLAGS += $(LD_FLAGS_LTO_CLANG)
 KBUILD_LDFLAGS_MODULE += $(LD_FLAGS_LTO_CLANG)
